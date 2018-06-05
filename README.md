@@ -4,6 +4,8 @@
 
 This repository contains the code originally forked from the [ImageNet training in PyTorch](https://github.com/pytorch/examples/tree/master/imagenet) that is modified to present the performance of [classifier-agnostic saliency map extraction](https://arxiv.org/abs/1805.08249), a practical algorithm to train a classifier-agnostic saliency mapping by simultaneously training a classifier and a saliency mapping. The method was proposed by Konrad Żołna, Krzysztof J. Geras and Kyunghyun Cho.
 
+The authors would like to acknowledge the code review done by Jason Phang ([zphang](https://github.com/zphang)).
+
 ## Software requirements
 
 + `Python 3.6` and `PyTorch 0.4` for training procedure (`train.py`).
