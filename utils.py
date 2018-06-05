@@ -1,11 +1,9 @@
 import cv2
-import numpy as np
 
 import torch
-import torch.nn.functional as F
 import torchvision.transforms as transforms
 
-from model_basics import *
+from model_basics import binarize_mask, get_mask
 
 def get_binarized_mask(input, model):
     mask = get_mask(input, model)
@@ -26,7 +24,7 @@ def get_masked_images(input, binary_mask, gray_scale = 0):
 def inpaint(mask, masked_image):
     l = []
     for i in range(mask.size(0)):
-        permuted_image = permute_image(masked_image[i], mul255 = True)
+        permuted_image = permute_image(masked_image[i], mul255=True)
         m = mask[i].squeeze().byte().numpy()
         inpainted_numpy = cv2.inpaint(permuted_image, m, 3, cv2.INPAINT_TELEA) #cv2.INPAINT_NS
         l.append(transforms.ToTensor()(inpainted_numpy).unsqueeze(0))

@@ -1,23 +1,20 @@
 import argparse
-import copy
 import os
 import random
 import time
 
-import torch
+import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 import archs
-from train_utils import *
-from stats import *
+from stats import AverageMeter, StatisticsContainer
+from train_utils import accuracy, adjust_learning_rate, save_checkpoint, set_args
 
-import numpy as np
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data',

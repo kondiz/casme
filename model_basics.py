@@ -1,6 +1,8 @@
+import numpy as np
+import scipy.ndimage
+
 import torch
 import torch.nn.functional as F
-import numpy as np
 
 import archs
 
@@ -62,78 +64,25 @@ def binarize_mask(mask):
         binarized_mask = binarized_mask.view(mask.size())
         return binarized_mask
 
-def get_rectangular_mask(m):
-    ## True means to get the largest connected part which is straight forward in our case
-    if True:
-        components = 0
-        visited = np.zeros((224, 224))
-        stack = []
-        pos = []
-        pos.append({})
-        for row in range(224):
-            for column in range(224):
-                if visited[row][column] == 0 and m[row][column] == 1:
-                    components += 1
-                    visited[row][column] = components
-                    pos.append({'xmin': row, 'xmax': row, 'ymin': column, 'ymax': column})
-                    stack.append([row, column, components])
-                while len(stack) > 0:
-                    row, column, no_component = stack.pop()
-                    visit(row, column, no_component, m, visited, stack, pos)
-        
-        max_comp = 0
-        max_count = 0
-        for comp in range(1, components + 1):
-            current_count = (visited==comp).sum()
-            if max_count < current_count:
-                max_count = current_count
-                max_comp = comp
-                
-        xmin_b = pos[max_comp]['xmin']
-        xmax_b = pos[max_comp]['xmax']
-        ymin_b = pos[max_comp]['ymin']
-        ymax_b = pos[max_comp]['ymax']
-    else:
-        th = 0
-        xmin_b = 0
-        ymin_b = 0
-        for row in range(224):
-            if m[row,:].mean() > th:
-                xmin_b = row
-                break
-        xmax_b = xmin_b + 1
-        for row in range(223, xmin_b, -1):
-            if m[row,:].mean() > th:
-                xmax_b = row - 1
-                break
-        for col in range(224):
-            if m[col,:].mean() > th:
-                ymin_b = col
-                break
-        ymax_b = ymin_b + 1
-        for col in range(223, ymin_b, -1):
-            if m[col,:].mean() > th:
-                ymax_b = col - 1
-                break
-    
+def get_largest_connected(m):
+    mask, num_labels = scipy.ndimage.label(m)
+    largest_label = np.argmax(np.bincount(
+        mask.reshape(-1), weights=m.reshape(-1)))
+    largest_connected = (mask == largest_label)
+    return largest_connected
+
+def get_bounding_box(m):
+    x = m.any(1)
+    y = m.any(0)
+    xmin = np.argmax(x)
+    xmax = np.argmax(np.cumsum(x))
+    ymin = np.argmax(y)
+    ymax = np.argmax(np.cumsum(y))
     with torch.no_grad():
         box_mask = torch.zeros(224,224).to(device)
-        box_mask[xmin_b:xmax_b+1,ymin_b:ymax_b+1] = 1
+        box_mask[xmin:xmax+1,ymin:ymax+1] = 1
         return box_mask
 
-def visit(row, column, component_no, m, visited, stack, pos):
-    for row_ in [max(row - 1, 0), row, min(row + 1, 223)]:
-        for column_ in [max(column - 1, 0), column, min(column + 1, 223)]:
-            if row_ != row and column_ != column:
-                continue
-            if visited[row_][column_] == 0 and m[row_][column_] == 1:
-                visited[row_][column_] = component_no
-                if pos[component_no]['xmin'] > row:
-                    pos[component_no]['xmin'] = row
-                if pos[component_no]['xmax'] < row:
-                    pos[component_no]['xmax'] = row
-                if pos[component_no]['ymin'] > column:
-                    pos[component_no]['ymin'] = column
-                if pos[component_no]['ymax'] < column:
-                    pos[component_no]['ymax'] = column
-                stack.append([row_, column_, component_no])
+
+def get_rectangular_mask(m):
+    return get_bounding_box(get_largest_connected(m))

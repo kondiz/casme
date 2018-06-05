@@ -1,6 +1,7 @@
+import numpy as np
+
 import torch
 import torch.nn.functional as F
-import numpy as np
 
 class AverageMeter(object):
     def __init__(self):

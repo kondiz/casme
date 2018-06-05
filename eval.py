@@ -1,6 +1,6 @@
 import argparse
-import os
 import glob
+import os
 
 import torch
 import torch.nn as nn
@@ -10,12 +10,11 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 
-from train_utils import accuracy
 from model_basics import load_model
 from stats import AverageMeter
+from train_utils import accuracy
 from utils import get_binarized_mask, get_masked_images, inpaint
 
-import numpy as np
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR',

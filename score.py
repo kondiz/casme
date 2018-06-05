@@ -9,7 +9,7 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
-from stats import *
+from stats import AverageMeter, StatisticsContainer
 from model_basics import load_model, get_masks_and_check_predictions
 
 
@@ -221,7 +221,7 @@ def get_ground_truth_boxes(anno, category):
                 
                 boxes.append([xmin, ymin, xmax, ymax])
             else:
-                print("Aborting!", ann_path, path)
+                print("Aborting!")
                 return
     return boxes
 
@@ -269,7 +269,7 @@ def get_loc_scores(cor_pos, continuous_mask, rectangular_mask):
     gt_box[ymin_c:ymax_c,xmin_c:xmax_c] = 1
 
     F1 = compute_f1(continuous_mask, gt_box, gt_box_size)
-    IOU = compute_iuo(rectangular_mask, gt_box, gt_box_size)
+    IOU = compute_iou(rectangular_mask, gt_box, gt_box_size)
     
     return F1, 1*(IOU > 0.5)
 
@@ -287,7 +287,7 @@ def compute_f1(m, gt_box, gt_box_size):
         recall = inside / gt_box_size
         return (2 * precision * recall)/(precision + recall + 1e-6)
 
-def compute_iuo(m, gt_box, gt_box_size):
+def compute_iou(m, gt_box, gt_box_size):
     with torch.no_grad():
         intersection = (m*gt_box).sum()
         return (intersection / (m.sum() + gt_box_size - intersection))
