@@ -12,7 +12,6 @@ import torchvision.datasets as datasets
 from stats import AverageMeter, StatisticsContainer
 from model_basics import load_model, get_masks_and_check_predictions
 
-
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
@@ -67,17 +66,16 @@ def main():
             transforms.ToTensor(),
             normalize,
         ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=False)
-    
+        batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=False)
+
     ## get score for special cases
     results = {}
     if args.toy:
-        results['max'] = score(os.path.join(args.log_path,'max'), {'special': 'max'}, data_loader, args.annotation_path)
-        results['center'] = score(os.path.join(args.log_path,'center'), {'special': 'center'}, data_loader, args.annotation_path)
+        results['max'] = score(os.path.join(args.log_path, 'max'), {'special': 'max'}, data_loader, args.annotation_path)
+        results['center'] = score(os.path.join(args.log_path, 'center'), {'special': 'center'}, data_loader, args.annotation_path)
 
     ## get score for models
-    for casm_path in glob.glob(os.path.join(args.casms_path,'*.*')):
+    for casm_path in glob.glob(os.path.join(args.casms_path, '*.*')):
         model = load_model(casm_path)
         results[model['name']] = score(os.path.join(args.log_path, model['name']), model, data_loader, args.annotation_path)
 
@@ -90,10 +88,10 @@ def score(output_path, model, data_loader, ann_paths):
             print("=> Output ({}) exists. Skipping.".format(output_path))
             return {'skipped': True}
         open(output_path, 'a').close()
-    
+
     if 'special' in model.keys():
         print("=> Special mode evaluation: {}.".format(model['special']))
-    
+
     ## setup meters
     batch_time = 0
     data_time = 0
@@ -104,25 +102,25 @@ def score(output_path, model, data_loader, ann_paths):
     statistics = StatisticsContainer()
 
     end = time.time()
-    
+
     ## data loop
     for i, ((input, target), paths) in enumerate(data_loader):
         if i > len(data_loader)*args.pot:
             break
 
         data_time += time.time() - end
-        
+
         input, target = input.numpy(), target.numpy()
-        
+
         ## compute continuous mask, rectangular mask and compare class predictions with targets
         if 'special' in model.keys():
             isCorrect = target.ge(0).numpy()
             if model['special'] == 'max':
-                continuous = np.ones((args.batch_size,224,224))
+                continuous = np.ones((args.batch_size, 224, 224))
                 rectangular = continuous
             if model['special'] == 'center':
-                continuous = np.zeros((args.batch_size,224,224))
-                continuous[:,:,33:-33,33:-33] = 1
+                continuous = np.zeros((args.batch_size, 224, 224))
+                continuous[:, :, 33:-33, 33:-33] = 1
                 rectangular = continuous
         else:
             continuous, rectangular, isCorrect = get_masks_and_check_predictions(input, target, model)
@@ -136,24 +134,24 @@ def score(output_path, model, data_loader, ann_paths):
             ann_path = os.path.join(ann_paths,os.path.basename(path)).split('.')[0]+'.xml'
 
             if not os.path.isfile(ann_path):
-                print("Annotations aren't found. Aborting!", ann_path, path)
+                print("Annotations aren't found. Aborting!")
                 return
 
             with open(ann_path) as f:
                 xml = f.readlines()
             anno = BeautifulSoup(''.join([line.strip('\t') for line in xml]), "html5lib")
-            
+
             size = anno.findChildren('size')[0]
             width = int(size.findChildren('width')[0].contents[0])
             height = int(size.findChildren('height')[0].contents[0])
-            
+
             category = path.split('/')[-2]
 
             ## get ground truth boxes positions in the original resolution
             gt_boxes = get_ground_truth_boxes(anno, category)
             ## get ground truth boxes positions in the resized resolution
             gt_boxes = get_resized_pos(gt_boxes, width, height, args.break_ratio)
-            
+
             ## compute localization metrics
             F1s_for_image = []
             IOUs_for_image = []
@@ -166,12 +164,12 @@ def score(output_path, model, data_loader, ann_paths):
             F1.update(np.array(F1s_for_image).max())
             F1a.update(np.array(F1s_for_image).mean())
             LE.update(1 - np.array(IOUs_for_image).max())
-            OM.update(1 - (np.array(IOUs_for_image).max()*isCorrect[id]))
+            OM.update(1 - (np.array(IOUs_for_image).max() * isCorrect[id]))
 
         ## measure elapsed time
         batch_time += time.time() - end
         end = time.time()
-        
+
         ## print log
         if i % args.print_freq == 0 and i > 0:
             print('[{0}/{1}]\t'
@@ -197,7 +195,7 @@ def score(output_path, model, data_loader, ann_paths):
     statistics.printOut()
 
     results = {'F1': F1.avg, 'F1a': F1a.avg, 'OM': OM.avg, 'LE': LE.avg, **statistics.getDictionary()}
-    
+
     if args.save_to_file:
         with open(output_path, 'a') as f:
             f.write(str(results))
@@ -218,17 +216,19 @@ def get_ground_truth_boxes(anno, category):
                 ymin = int(bbox.findChildren('ymin')[0].contents[0])
                 xmax = int(bbox.findChildren('xmax')[0].contents[0])
                 ymax = int(bbox.findChildren('ymax')[0].contents[0])
-                
+
                 boxes.append([xmin, ymin, xmax, ymax])
             else:
                 print("Aborting!")
                 return
+
     return boxes
 
 def get_resized_pos(gt_boxes, width, height, break_ratio):
     resized_boxes = []
     for box in gt_boxes:
         resized_boxes.append(resize_pos(box, width, height, break_ratio))
+
     return resized_boxes
 
 def resize_pos(raw_pos, width, height, break_ratio):
@@ -248,18 +248,18 @@ def resize_pos(raw_pos, width, height, break_ratio):
             ratio_y = 224/width
             xcut = 0
             ycut = (height*ratio_y - 224) / 2
-        
+
     semi_cor_pos = [(ratio_x*raw_pos[0] - xcut),
                     (ratio_y*raw_pos[1] - ycut),
                     (ratio_x*raw_pos[2] - xcut),
                     (ratio_y*raw_pos[3] - ycut)]
-    
+
     return [int(x) for x in semi_cor_pos]
 
 def get_loc_scores(cor_pos, continuous_mask, rectangular_mask):
     xmin, ymin, xmax, ymax = cor_pos
     gt_box_size = (xmax - xmin)*(ymax - ymin)
-    
+
     xmin_c, ymin_c, xmax_c, ymax_c = [clip(x, 0, 224) for x in cor_pos]
 
     if xmin_c==xmax_c or ymin_c==ymax_c:
@@ -270,7 +270,7 @@ def get_loc_scores(cor_pos, continuous_mask, rectangular_mask):
 
     F1 = compute_f1(continuous_mask, gt_box, gt_box_size)
     IOU = compute_iou(rectangular_mask, gt_box, gt_box_size)
-    
+
     return F1, 1*(IOU > 0.5)
 
 def clip(x, a, b):
@@ -278,6 +278,7 @@ def clip(x, a, b):
         return a
     if x > b:
         return b
+
     return x
 
 def compute_f1(m, gt_box, gt_box_size):
@@ -285,12 +286,14 @@ def compute_f1(m, gt_box, gt_box_size):
         inside = (m*gt_box).sum()
         precision = inside / (m.sum() + 1e-6)
         recall = inside / gt_box_size
+
         return (2 * precision * recall)/(precision + recall + 1e-6)
 
 def compute_iou(m, gt_box, gt_box_size):
     with torch.no_grad():
         intersection = (m*gt_box).sum()
+
         return (intersection / (m.sum() + gt_box_size - intersection))
-    
+
 if __name__ == '__main__':
     main()

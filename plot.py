@@ -53,8 +53,7 @@ def main():
             transforms.CenterCrop(224),
             transforms.ToTensor(),
         ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=False)
+        batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=False)
     
     model = load_model(args.casm_path)
     
@@ -78,12 +77,12 @@ def main():
         for id in range(args.columns):
             normalize(normalized_input[id])
 
-        ## compute mask and masked images
+        ## get mask and masked images
         binary_mask = get_binarized_mask(normalized_input, model)
         masked_in, masked_out = get_masked_images(input, binary_mask, 0.35)
         inpainted = inpaint(binary_mask, masked_out)
 
-        ## plot setup
+        ## setup plot
         fig, axes = plt.subplots(4, args.columns)
         if args.columns == 4:
             fig.subplots_adjust(bottom=-0.02, top=1.02, wspace=0.05, hspace=0.05)
@@ -96,10 +95,10 @@ def main():
 
         ## plot
         for col in range(args.columns):
-            axes[0,col].imshow(permute_image(input[col]))
-            axes[1,col].imshow(permute_image(masked_in[col]))
-            axes[2,col].imshow(permute_image(masked_out[col]))
-            axes[3,col].imshow(permute_image(inpainted[col]))
+            axes[0, col].imshow(permute_image(input[col]))
+            axes[1, col].imshow(permute_image(masked_in[col]))
+            axes[2, col].imshow(permute_image(masked_out[col]))
+            axes[3, col].imshow(permute_image(inpainted[col]))
 
         for ax in axes.flatten():
             ax.set_xticks([])

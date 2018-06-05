@@ -15,7 +15,6 @@ import archs
 from stats import AverageMeter, StatisticsContainer
 from train_utils import accuracy, adjust_learning_rate, save_checkpoint, set_args
 
-
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data',
                     help='path to dataset')
@@ -83,8 +82,7 @@ def main():
 
     optimizer = {}
     optimizer['classifier'] = torch.optim.SGD(classifier.parameters(), args.lr,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
+                                momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer['decoder'] = torch.optim.Adam(decoder.parameters(), args.lr_casme,
                                 weight_decay=args.weight_decay)
 
@@ -105,8 +103,7 @@ def main():
             transforms.ToTensor(),
             normalize,
         ])),
-        batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=False, sampler=None)
+        batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=False, sampler=None)
 
     val_loader = torch.utils.data.DataLoader(
         datasets.ImageFolder(valdir, transforms.Compose([
@@ -115,8 +112,7 @@ def main():
             transforms.ToTensor(),
             normalize,
         ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=False)
+        batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=False)
 
     ## training loop
     for epoch in range(args.epochs):
@@ -126,10 +122,10 @@ def main():
 
         ## train for one epoch
         tr_s = train_or_eval(train_loader, classifier, decoder, True, optimizer, epoch)
-        
+
         ## evaluate on validation set
         val_s = train_or_eval(val_loader, classifier, decoder)
-        
+
         ## save checkpoint
         save_checkpoint({
             'epoch': epoch + 1,
@@ -139,7 +135,7 @@ def main():
             'optimizer_decoder' : optimizer['decoder'].state_dict(),
             'args' : args,
         }, args)
-        
+
         ## log
         with open(args.log_path, 'a') as f:
             f.write(str(epoch + 1) + ' ' + str(time.time() - epoch_start_time) + ' ' + 
@@ -148,7 +144,6 @@ def main():
                     tr_s['std_mask'] + ' ' + val_s['std_mask'] + ' ' + 
                     tr_s['entropy'] + ' ' + val_s['entropy'] + ' ' + 
                     tr_s['tv'] + ' ' + val_s['tv'] + '\n')
-
 
 def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None, epoch=None):
     ## initialize all metric used
@@ -181,7 +176,7 @@ def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None,
 
         ## measure data loading time
         data_time.update(time.time() - end)
-        
+
         ## move input and target on the device
         input, target = input.to(device), target.to(device)
 
@@ -199,7 +194,7 @@ def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None,
             optimizer['classifier'].zero_grad()
             classifier_loss.backward()
             optimizer['classifier'].step()
-            
+
             ## save classifier (needed only if previous iterations are used i.e. args.hp > 0)
             global F_k
             if args.hp > 0 and ((i % args.smf == -1 % args.smf) or len(F_k) < 1):
@@ -216,7 +211,7 @@ def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None,
 
         ## detach inner layers to make them be features for decoder
         layers = [l.detach() for l in layers]
-        
+
         with torch.set_grad_enabled(train):
             ## compute mask and masked input
             mask = decoder(layers)
@@ -263,17 +258,19 @@ def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None,
             nontrivially_confused = (correct_on_clean + mistaken_on_masked).eq(2).float()
 
             mask_mean = F.avg_pool2d(mask, 224, stride=1).squeeze()
-            
-            casme_loss = -args.lambda_r*F.relu(nontrivially_confused - mask_mean).mean()
-            
+
+            ## apply regularization loss only on nontrivially confused images
+            casme_loss = -args.lambda_r * F.relu(nontrivially_confused - mask_mean).mean()
+
             ## main loss for casme
             if args.adversarial:
                 casme_loss += -classifier_loss_m
             else:
-                log_prob = F.log_softmax(output_m,1)
+                log_prob = F.log_softmax(output_m, 1)
                 prob = log_prob.exp()
-                negative_entropy = (log_prob*prob).sum(1)
-                negative_entropy_correct = negative_entropy*correct_on_clean.float()
+                negative_entropy = (log_prob * prob).sum(1)
+                ## apply main loss only when original images are corrected classified
+                negative_entropy_correct = negative_entropy * correct_on_clean.float()
                 casme_loss += negative_entropy_correct.mean()
 
             ## update casme - compute gradient, do SGD step
@@ -285,7 +282,7 @@ def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None,
         ## measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
-        
+
         ## print log
         if i % args.print_freq == 0:
             if train:
@@ -305,8 +302,12 @@ def train_or_eval(data_loader, classifier, decoder, train=False, optimizer=None,
     if not train:
         print(' * Prec@1 {acc.avg:.3f} Prec@1(M) {acc_m.avg:.3f} '.format(acc=acc, acc_m=acc_m))
         statistics.printOut()
-    
-    return {'acc':str(acc.avg), 'acc_m':str(acc_m.avg), **statistics.getDictionary()}
+
+    return {
+        'acc':str(acc.avg),
+        'acc_m':str(acc_m.avg),
+        **statistics.getDictionary()
+    }
 
 if __name__ == '__main__':
     main()

@@ -15,7 +15,6 @@ from stats import AverageMeter
 from train_utils import accuracy
 from utils import get_binarized_mask, get_masked_images, inpaint
 
-
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
@@ -61,13 +60,12 @@ def main():
             name = name + ('.'*(20 - len(name)))
         classifiers[name] = model.to(device).eval()
         print("=> Model '{}' loaded.".format(name))
-        
+
     if len(args.resnets_path) > 0:
         for path in glob.glob(os.path.join(args.resnets_path,'*')):
             name = path.split('/')[-1].split('.')[0]
             if len(name) < 20:
                 name = name + ('.'*(20 - len(name)))
-
             classifiers[name] = models.resnet50()
             classifiers[name] = torch.nn.DataParallel(classifiers[name])
             checkpoint = torch.load(path)
@@ -82,22 +80,21 @@ def main():
             transforms.CenterCrop(224),
             transforms.ToTensor(),
         ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=False)
-    
+        batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=False)
+
     agg_results = {}
     if args.toy:
-        agg_results['zero'] = confuse(os.path.join(args.log_path,'zero'), {'special': 'zero'}, classifiers, data_loader)
-        agg_results['one'] = confuse(os.path.join(args.log_path,'one'), {'special': 'one'}, classifiers, data_loader)
+        agg_results['zero'] = confuse(os.path.join(args.log_path, 'zero'), {'special': 'zero'}, classifiers, data_loader)
+        agg_results['one'] = confuse(os.path.join(args.log_path, 'one'), {'special': 'one'}, classifiers, data_loader)
         agg_results['random56'] = confuse(os.path.join(args.log_path,'random56'), {'special': 'random56'}, classifiers, data_loader)
-        agg_results['random224'] = confuse(os.path.join(args.log_path,'random224'), {'special': 'random224'}, classifiers, data_loader)
+        agg_results['random224'] = confuse(os.path.join(args.log_path, 'random224'), {'special': 'random224'}, classifiers, data_loader)
 
-    for path in glob.glob(os.path.join(args.casms_path,'*')):
+    for path in glob.glob(os.path.join(args.casms_path, '*')):
         model = load_model(path)
         agg_results[model['name']] = confuse(os.path.join(args.log_path, model['name']), model, classifiers, data_loader)
-    
+
     print(agg_results)
-        
+
 def confuse(output_path, model, classifiers, data_loader):
     ## create an empty file and skip the evaluation if the file exists
     if args.save_to_file:
@@ -105,15 +102,15 @@ def confuse(output_path, model, classifiers, data_loader):
             print("=> Output ({}) exists. Skipping.".format(output_path))
             return {'skipped': True}
         open(output_path, 'a').close()
-    
+
     if 'special' in model.keys():
         print("=> Special mode evaluation: {}.".format(model['special']))
-    
+
     ## setup meters
     masked_in_score = ScoreContainer(classifiers)
     masked_out_score = ScoreContainer(classifiers)
     inpainted_score = ScoreContainer(classifiers)
-    
+
     ## initialize normalizer
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
@@ -131,15 +128,15 @@ def confuse(output_path, model, classifiers, data_loader):
         ## compute continuous mask, thresholded mask and compare class predictions with targets
         if 'special' in model.keys():
             if model['special'] == 'zero':
-                binary_mask = torch.zeros(input.size(0),1,224,224)
+                binary_mask = torch.zeros(input.size(0), 1, 224, 224)
             if model['special'] == 'one':
-                binary_mask = torch.ones(input.size(0),1,224,224)
+                binary_mask = torch.ones(input.size(0), 1, 224, 224)
             if model['special']  == 'random56':
-                binary_mask = torch.zeros(input.size(0),1,56,56)
+                binary_mask = torch.zeros(input.size(0), 1, 56, 56)
                 binary_mask.bernoulli_(0.5)
                 binary_mask = nn.Upsample(scale_factor=4, mode='nearest')(binary_mask)
             if model['special']  == 'random224':
-                binary_mask = torch.zeros(input.size(0),1,224,224)
+                binary_mask = torch.zeros(input.size(0), 1, 224, 224)
                 binary_mask.bernoulli_(0.5)
         else:
             normalized_input = input.clone()
@@ -175,9 +172,10 @@ def confuse(output_path, model, classifiers, data_loader):
     if args.save_to_file:
         with open(output_path, 'a') as f:
             f.write(str(results))
-            f.write('\n'+string_args)
+            f.write('\n' + string_args)
 
     print(results)
+
     return results
 
 class ScoreContainer(object):
@@ -204,15 +202,16 @@ class ScoreContainer(object):
 
             log_prob = F.log_softmax(output,1)
             prob = log_prob.exp()
-            entropy = -(log_prob*prob).sum(1).data
+            entropy = -(log_prob * prob).sum(1).data
             self.ent[key].update(entropy.mean().item(), target.size(0))  
 
     def getDictionary(self, key):
-        return {'l': self.losses[key].avg,
-                't1': self.top1[key].avg,
-                't5': self.top5[key].avg,
-                'e': self.ent[key].avg
-               }
+        return {
+            'l': self.losses[key].avg,
+            't1': self.top1[key].avg,
+            't5': self.top5[key].avg,
+            'e': self.ent[key].avg
+        }
 
 if __name__ == '__main__':
     main()

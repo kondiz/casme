@@ -42,7 +42,6 @@ class Bottleneck(nn.Module):
 
         return out
 
-
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000):
@@ -125,14 +124,12 @@ class ResNetShared(ResNet):
         x = self.fc(x)
 
         return x, l
-    
 
 def resnet50shared(pretrained=False, **kwargs):
     model = ResNetShared(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url('https://download.pytorch.org/models/resnet50-19c8e357.pth'))
     return model
-
 
 class Decoder(nn.Module):
 

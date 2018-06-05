@@ -18,7 +18,7 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
-        
+
 class StatisticsContainer(object):
     def __init__(self):
         self.reset()
@@ -46,17 +46,18 @@ class StatisticsContainer(object):
 
             tv = (mask[:,:,:,:-1] - mask[:,:,:,1:]).pow(2).mean() + (mask[:,:,:-1,:] - mask[:,:,1:,:]).pow(2).mean()
             self.tv.update(tv.item(), mask.size(0))
-        
+
     def printOut(self):
         print('TV (x100)   {tv_avg:.3f} ({tv_val:.3f})\t'
               'AvgMask {a.avg:.3f} ({a.val:.3f})\n'
               'EntropyMask {e.avg:.3f} ({e.val:.3f})\t'
               'StdMask {s.avg:.3f} ({s.val:.3f})'.format(
                   a=self.avg, s=self.std, e=self.entropy, tv_avg=100*self.tv.avg, tv_val=100*self.tv.val), flush=True)
-        
+
     def getDictionary(self): 
-        return {'avg_mask': str(self.avg.avg),
-                'std_mask':str(self.std.avg),
-                'entropy': str(self.entropy.avg),
-                'tv': str(self.tv.avg)
-               }
+        return {
+            'avg_mask': str(self.avg.avg),
+            'std_mask':str(self.std.avg),
+            'entropy': str(self.entropy.avg),
+            'tv': str(self.tv.avg)
+        }
