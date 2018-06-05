@@ -61,7 +61,7 @@ Similarly to `score.py` one can run
 or
 + `python3 eval.py IMAGENET-PATH --casms-path CASMS-PATH --log-path LOG-PATH --save-to-file`
 
-to get classification accuracy for modified images (masked-in, masked-out and inpainted masked-out images (see [the paper](https://arxiv.org/abs/1805.08249) for definitions).
+to get classification accuracy for modified images (masked-in, masked-out and inpainted masked-out images, see [the paper](https://arxiv.org/abs/1805.08249) for definitions).
 
 The option `--resnets-path RESNETS-PATH` can be used to load pre-trained classifiers from the `RESNETS-PATH` that will be also evaluated. It is assumed that these classifiers are all ResNet-50 and are saved in the format like in [this official repository](https://github.com/pytorch/examples/tree/master/imagenet).
 
@@ -73,6 +73,9 @@ To plot visualizations one can run
 
 where `SINGLE-CASM-PATH` is a path to a single CASM (not a directory) and `PLOTS-PATH` is a directory where visualizations for a given CASM will be saved.
 
+The exemplary visualization is below (see the caption of Figure 2 from [the paper](https://arxiv.org/abs/1805.08249) for the description).
+
+![UI](visualization.png)
 
 ### Additional options
 
@@ -81,3 +84,16 @@ There are a few hyper-parameters of the training procedure. Running
 + `python3 train.py --help`
 
 displays the full list of them. The same works for `score.py`, `eval.py` and `plot.py`.
+
+## Reference
+
+If you found this code useful, please cite [the following paper](https://arxiv.org/abs/1805.08249):
+
+Konrad Żołna, Krzysztof J. Geras, Kyunghyun Cho. **"Classifier-agnostic saliency map extraction."** *arXiv preprint arXiv:1805.08249 (2018).*
+
+    @article{zolna2018classifier,
+      title={Classifier-agnostic saliency map extraction},
+      author={Zolna, Konrad and Geras, Krzysztof J and Cho, Kyunghyun},
+      journal={arXiv preprint arXiv:1805.08249,
+      year={2018}
+    }
