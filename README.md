@@ -91,9 +91,11 @@ If you found this code useful, please cite [the following paper](https://arxiv.o
 
 Konrad Żołna, Krzysztof J. Geras, Kyunghyun Cho. **"Classifier-agnostic saliency map extraction."** *arXiv preprint arXiv:1805.08249 (2018).*
 
-    @article{zolna2018classifier,
+    @inproceedings{zolna2019classifier,
       title={Classifier-agnostic saliency map extraction},
       author={Zolna, Konrad and Geras, Krzysztof J and Cho, Kyunghyun},
-      journal={arXiv preprint arXiv:1805.08249,
-      year={2018}
+      booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
+      volume={33},
+      pages={10087--10088},
+      year={2019}
     }
